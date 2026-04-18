@@ -20,7 +20,7 @@ import {
  * @returns {Promise<Object>} - La tarea creada
  */
 export async function crearTarea(titulo, descripcion, userId) {
-    const created = await taskPost(titulo, descripcion, 'pendiente', userId, 'usuario');
+    const created = await taskPost(titulo, descripcion, 'pendiente', userId, 'user');
     return mapApiTaskToUiTask(created);
 }
 
@@ -41,8 +41,8 @@ export async function obtenerTodasTareas() {
 export async function obtenerTareasPorUsuario(userId) {
     const todas = await taskGetByUser(userId);
     const mapped = todas.map(mapApiTaskToUiTask);
-    // Tomar solo las últimas 5 del servidor
-    return mapped.slice(-5).reverse();
+    // Mantener todas para que filtros/ordenamiento funcionen sobre el conjunto completo
+    return mapped;
 }
 
 /**
@@ -73,9 +73,10 @@ export function aplicarFiltrosYOrdenar(tareas, options = {}) {
         resultado = resultado.filter(t => (t.titulo || '').toLowerCase().includes(q));
     }
 
-    // Filtrar por estado
+    // Filtrar por estado (normalizado)
     if (estado && estado.trim() !== '') {
-        resultado = resultado.filter(t => t.estado === estado);
+        const estadoNormalizado = estado.trim().toLowerCase();
+        resultado = resultado.filter(t => (t.estado || '').trim().toLowerCase() === estadoNormalizado);
     }
 
     // Ordenar
@@ -92,16 +93,23 @@ export function aplicarFiltrosYOrdenar(tareas, options = {}) {
 
         if (sortBy === 'estado') {
             const A = (a.estado || '').toLowerCase();
-            const B = (b.estado || '').toLowerCase(); 
+            const B = (b.estado || '').toLowerCase();
             if (A < B) return -1 * dir;
             if (A > B) return 1 * dir;
             return 0;
         }
 
-        // Por defecto: fecha de creación
+        // Por defecto: fecha de creación (asc/desc)
         const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
         const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
-        return (aTime - bTime) * dir;
+        if (aTime !== bTime) return (aTime - bTime) * dir;
+
+        // Desempate alfabético por título
+        const A = (a.titulo || '').toLowerCase();
+        const B = (b.titulo || '').toLowerCase();
+        if (A < B) return -1 * dir;
+        if (A > B) return 1 * dir;
+        return 0;
     });
 
     return resultado;
@@ -124,7 +132,7 @@ export async function eliminarTarea(id) {
  * @param {string} userId - Nuevo ID de usuario
  * @returns {Promise<Object>} - La tarea actualizada
  */
-export async function actualizarTarea(id, titulo, descripcion, userId, status = 'pendiente', created_by = 'usuario') {
+export async function actualizarTarea(id, titulo, descripcion, userId, status = 'pendiente', created_by = 'user') {
     const updated = await taskPut(id, titulo, descripcion, status, userId, created_by);
     return mapApiTaskToUiTask(updated);
 }
@@ -160,12 +168,18 @@ export function prepararDatosExportacion(tareas) {
 function mapApiTaskToUiTask(task = {}) {
     const rawId = task.id ?? task.task_id ?? '';
     const rawUserId = task.userId ?? task.user_id ?? '';
+    const rawAssigned = task.assigned_to ?? task.assignedTo ?? rawUserId ?? '';
+    const rawCreator = task.created_by ?? task.createdBy ?? 'user';
 
     return {
         id: rawId !== '' && rawId != null ? String(rawId) : '',
         titulo: task.titulo ?? task.title ?? '',
         descripcion: task.descripcion ?? task.description ?? '',
         estado: task.estado ?? task.status ?? 'pendiente',
-        userId: rawUserId !== '' && rawUserId != null ? String(rawUserId) : ''
+        userId: rawUserId !== '' && rawUserId != null ? String(rawUserId) : '',
+        asignadoA: rawAssigned !== '' && rawAssigned != null ? String(rawAssigned) : '',
+        created_by: String(rawCreator || 'user'),
+        createdAt: task.createdAt ?? task.created_at ?? null,
+        updatedAt: task.updatedAt ?? task.updated_at ?? null
     };
 }

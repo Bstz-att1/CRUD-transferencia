@@ -38,8 +38,8 @@ export async function obtenerUsuarioPorId(id) {
  * @param {string} rol - Rol del usuario
  * @returns {Promise<Object>} - Usuario creado
  */
-export async function crearUsuario(nombre, correo, rol = 'usuario') {
-    const created = await userPost(nombre, correo, rol);
+export async function crearUsuario(nombre, correo, documento, rol = 'usuario') {
+    const created = await userPost(nombre, correo, documento, rol);
     return mapApiUserToUiUser(created);
 }
 
@@ -51,8 +51,8 @@ export async function crearUsuario(nombre, correo, rol = 'usuario') {
  * @param {string} rol - Rol del usuario
  * @returns {Promise<Object>} - Usuario actualizado
  */
-export async function reemplazarUsuario(id, nombre, correo, rol = 'usuario') {
-    const updated = await userPut(id, nombre, correo, rol);
+export async function reemplazarUsuario(id, nombre, correo, documento, rol = 'usuario') {
+    const updated = await userPut(id, nombre, correo, documento, rol);
     return mapApiUserToUiUser(updated);
 }
 
@@ -76,12 +76,20 @@ export async function eliminarUsuario(id) {
     return await userDelete(id);
 }
 
+function normalizeRol(value) {
+    const rol = String(value ?? '').trim().toLowerCase();
+    if (['admin', 'administrator', 'administrador'].includes(rol)) return 'administrador';
+    if (['user', 'usuario'].includes(rol)) return 'usuario';
+    return 'usuario';
+}
+
 function mapApiUserToUiUser(user = {}) {
     const rawId = user.id ?? user.user_id ?? '';
     return {
         id: rawId !== '' && rawId != null ? String(rawId) : '',
         nombre: user.nombre ?? user.name ?? '',
         email: user.email ?? '',
-        rol: user.rol ?? user.role ?? 'usuario'
+        document: user.document ?? user.documento ?? '',
+        rol: normalizeRol(user.rol ?? user.role ?? 'usuario')
     };
 }
