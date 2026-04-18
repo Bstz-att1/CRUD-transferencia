@@ -33,7 +33,7 @@ export async function taskGetByUser(userId) {
     const todas = await response.json();
 
     // 2. Filtramos por el ID del usuario. 
-    return todas.filter(tarea => tarea.user_id === userId);
+    return todas.filter(tarea => String(tarea.userId) === String(userId));
 }
 
 
@@ -56,11 +56,10 @@ export async function taskPost(titulo, descripcion, status, userId, created_by) 
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            title: titulo,
-            description: descripcion,
-            user_id: userId,
-            status: status,
-            created_by: created_by
+            titulo: titulo,
+            descripcion: descripcion,
+            userId: userId,
+            estado: status || 'pendiente'
         })
     });
 
@@ -93,11 +92,10 @@ export async function taskPut(id, titulo, descripcion, status, userId, created_b
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            title: titulo,
-            description: descripcion,
-            status: status,
-            user_id: userId,
-            created_by: created_by
+            titulo: titulo,
+            descripcion: descripcion,
+            estado: status,
+            userId: userId
         })
     });
 
@@ -129,10 +127,10 @@ export async function taskPatch(id, titulo, descripcion, status, userId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            title: titulo,
-            description: descripcion,
-            status: status,
-            user_id: userId
+            titulo: titulo,
+            descripcion: descripcion,
+            estado: status,
+            userId: userId
         })
     });
 
