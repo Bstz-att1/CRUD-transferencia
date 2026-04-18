@@ -49,7 +49,7 @@ export async function userPost(name, email, role) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email, role })
+        body: JSON.stringify({ nombre: name, email, rol: role })
     });
 
     if (!response.ok) {
@@ -78,7 +78,7 @@ export async function userPut(id, name, email, role) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email, role })
+        body: JSON.stringify({ nombre: name, email, rol: role })
     });
 
     if (!response.ok) {
