@@ -49,8 +49,9 @@ export async function userGetById(id) {
  * @param {string} role - Rol del usuario (administrador | usuario).
  * @returns {Promise<Object>} - El usuario creado.
  */
-export async function userPost(name, email, role) {
-    const payload = { name, email, role };
+export async function userPost(name, email, document, role) {
+    const normalizedRole = role === 'administrador' ? 'admin' : role === 'usuario' ? 'user' : role;
+    const payload = { name, email, document, role: normalizedRole };
 
     const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
@@ -87,8 +88,9 @@ export async function userPost(name, email, role) {
  * @param {string} role - Rol del usuario.
  * @returns {Promise<Object>} - Usuario actualizado.
  */
-export async function userPut(id, name, email, role) {
-    const payload = { name, email, role };
+export async function userPut(id, name, email, document, role) {
+    const normalizedRole = role === 'administrador' ? 'admin' : role === 'usuario' ? 'user' : role;
+    const payload = { name, email, document, role: normalizedRole };
 
     const response = await fetch(`${API_URL}/users/${id}`, {
         method: 'PUT',

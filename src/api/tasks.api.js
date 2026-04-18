@@ -66,7 +66,7 @@ export async function taskPost(titulo, descripcion, status, userId, created_by) 
         description: descripcion,
         status: status || 'pendiente',
         user_id: userId != null && userId !== '' ? Number(userId) : null,
-        created_by: created_by || 'usuario'
+        created_by: created_by || 'user'
     };
 
     const response = await fetch(`${API_URL}/tasks`, {
@@ -83,8 +83,13 @@ export async function taskPost(titulo, descripcion, status, userId, created_by) 
         throw new Error(json?.message || "Error al crear la tarea");
     }
 
-    const data = extractData(json) || {};
-    const insertId = data.insertId ?? data.id;
+    const data = extractData(json);
+
+    if (data && !Array.isArray(data) && typeof data === 'object') {
+        return data;
+    }
+
+    const insertId = data?.insertId ?? data?.id;
 
     return {
         id: insertId != null ? String(insertId) : '',
@@ -112,7 +117,7 @@ export async function taskPut(id, titulo, descripcion, status, userId, created_b
         description: descripcion,
         status: status,
         user_id: userId != null && userId !== '' ? Number(userId) : null,
-        created_by: created_by || 'usuario'
+        created_by: created_by || 'user'
     };
 
     const response = await fetch(`${API_URL}/tasks/${id}`, {
