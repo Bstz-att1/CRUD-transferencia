@@ -1,17 +1,14 @@
 /**
  * Notifications Module (RF03)
- * Independent user message system.
- * It does not depend on API or business logic modules.
+ * Sistema de toasts reutilizable para éxito/error/info.
  */
 
-// Toast notifications container
 let notificationContainer = null;
 
 function getNotificationContainer() {
     if (!notificationContainer) {
         notificationContainer = document.createElement('div');
         notificationContainer.id = 'notification-toast-container';
-
         Object.assign(notificationContainer.style, {
             position: 'fixed',
             top: '20px',
@@ -19,51 +16,52 @@ function getNotificationContainer() {
             zIndex: '9999',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px'
+            gap: '10px',
+            width: 'min(420px, calc(100vw - 32px))'
         });
-
         document.body.appendChild(notificationContainer);
     }
-
     return notificationContainer;
 }
 
-/**
- * Create and show a visual notification
- * @param {string} message
- * @param {string} type - 'success' | 'error' | 'info'
- */
-function showNotification(message, type) {
+function showNotification(message, type = 'info') {
     const container = getNotificationContainer();
     const toast = document.createElement('div');
 
+    const tone = {
+        success: { bg: '#15803d', border: '#86efac' },
+        error: { bg: '#b91c1c', border: '#fecaca' },
+        info: { bg: '#1d4ed8', border: '#93c5fd' }
+    }[type] || { bg: '#334155', border: '#cbd5e1' };
+
     Object.assign(toast.style, {
-        padding: '15px 20px',
-        borderRadius: '5px',
-        color: 'white',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        minWidth: '250px',
-        maxWidth: '400px',
+        padding: '12px 14px',
+        borderRadius: '10px',
+        color: '#ffffff',
+        background: tone.bg,
+        borderLeft: `4px solid ${tone.border}`,
+        boxShadow: '0 12px 24px rgba(15,23,42,.18)',
         fontSize: '14px',
-        fontFamily: 'sans-serif',
-        animation: 'fadeIn 0.3s ease-in-out'
+        fontFamily: 'Inter, Roboto, sans-serif',
+        lineHeight: '1.4',
+        opacity: '0',
+        transform: 'translateY(-8px)',
+        transition: 'opacity .2s ease, transform .2s ease'
     });
 
-    const colors = {
-        success: '#28a745',
-        error: '#dc3545',
-        info: '#17a2b8'
-    };
-
-    toast.style.backgroundColor = colors[type] || colors.info;
     toast.textContent = message;
-
     container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    });
 
     setTimeout(() => {
         toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 220);
+    }, 3500);
 }
 
 export function showSuccess(message) {

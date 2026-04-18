@@ -33,22 +33,46 @@ export function renderUsers(users, container) {
     container.innerHTML = '';
 
     if (!users || users.length === 0) {
-        container.innerHTML = '<p class="no-users">No hay usuarios para mostrar.</p>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <h4>No hay usuarios para mostrar</h4>
+                <p>Agrega un nuevo usuario para comenzar.</p>
+            </div>
+        `;
         return;
     }
 
-    users.forEach((user) => {
-        const card = document.createElement('div');
-        card.classList.add('user-card');
-        card.innerHTML = `
-            <div class="user-card-content">
-                <h4>${user.name || 'Sin nombre'}</h4>
-                <p>${user.email || 'Sin correo'}</p>
-                <small>Rol: ${user.role || 'usuario'}</small>
-            </div>
-        `;
-        container.appendChild(card);
-    });
+    const table = document.createElement('div');
+    table.className = 'table-wrapper';
+    table.innerHTML = `
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${users.map((user) => `
+                    <tr>
+                        <td>${user.id || '-'}</td>
+                        <td>${user.nombre || 'Sin nombre'}</td>
+                        <td>${user.email || 'Sin correo'}</td>
+                        <td>${user.rol || 'usuario'}</td>
+                        <td>
+                            <button type="button" class="btn btn-secondary user-edit" data-id="${user.id}">Editar</button>
+                            <button type="button" class="btn btn-danger user-delete" data-id="${user.id}">Borrar</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    container.appendChild(table);
 }
 
 /**

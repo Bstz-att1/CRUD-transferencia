@@ -34,12 +34,31 @@ function getElements() {
  * @param {HTMLElement} container - Target container
  */
 export function renderTasks(tasks, container) {
+    if (!container) return;
     container.innerHTML = "";
 
     if (!tasks || tasks.length === 0) {
-        container.innerHTML = '<p class="no-tasks">No hay tareas para mostrar.</p>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <h4>No hay tareas para mostrar</h4>
+                <p>Cuando se carguen tareas del backend aparecerán aquí.</p>
+            </div>
+        `;
         return;
     }
+
+    const formatDate = (value) => {
+        if (!value) return 'N/A';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleString('es-CO', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
     tasks.forEach(task => {
         const card = document.createElement("div");
@@ -47,14 +66,20 @@ export function renderTasks(tasks, container) {
 
         card.innerHTML = `
             <div class="div-task">
-                <h3>${task.titulo}</h3>
-                <p>${task.descripcion}</p>
+                <h3>${task.titulo || 'Sin título'}</h3>
+                <p>${task.descripcion || 'Sin descripción'}</p>
                 <div class="task-estado">
-                    <span class="estado-badge estado-${task.estado?.replace(/\s+/g, '-')}">${task.estado || 'Sin estado'}</span>
+                    <span class="estado-badge estado-${(task.estado || '').replace(/\s+/g, '-')}">${task.estado || 'Sin estado'}</span>
+                </div>
+                <div class="task-meta">
+                    <span><strong>Creador:</strong> ${task.created_by || 'usuario'}</span>
+                    <span><strong>Asignado a:</strong> ${task.asignadoA || task.userId || 'N/A'}</span>
+                    <span><strong>Creada:</strong> ${formatDate(task.createdAt)}</span>
+                    <span><strong>Actualizada:</strong> ${formatDate(task.updatedAt)}</span>
                 </div>
                 <div class="task-buttons">
-                    <button type="button" class="btn edit" data-id="${task.id}">Editar</button>
-                    <button type="button" class="btn delete" data-id="${task.id}">Borrar</button>
+                    <button type="button" class="btn btn-secondary edit" data-id="${task.id}">Editar</button>
+                    <button type="button" class="btn btn-danger delete" data-id="${task.id}">Borrar</button>
                 </div>
             </div>
         `;
