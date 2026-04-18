@@ -1,5 +1,9 @@
 import { API_URL } from '../core/config.js';
 
+function extractData(json) {
+    return json?.data;
+}
+
 // ======================================================================
 //                             METHOD | GET
 // ======================================================================
@@ -14,7 +18,8 @@ export async function userGet() {
         throw new Error('Error al obtener usuarios');
     }
 
-    return await response.json();
+    const json = await response.json();
+    return Array.isArray(extractData(json)) ? extractData(json) : [];
 }
 
 /**
@@ -29,7 +34,8 @@ export async function userGetById(id) {
         throw new Error('Error al obtener el usuario');
     }
 
-    return await response.json();
+    const json = await response.json();
+    return extractData(json) || {};
 }
 
 
@@ -44,20 +50,29 @@ export async function userGetById(id) {
  * @returns {Promise<Object>} - El usuario creado.
  */
 export async function userPost(name, email, role) {
+    const payload = { name, email, role };
+
     const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ nombre: name, email, rol: role })
+        body: JSON.stringify(payload)
     });
 
+    const json = await response.json();
+
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al crear el usuario');
+        throw new Error(json?.message || 'Error al crear el usuario');
     }
 
-    return await response.json();
+    const data = extractData(json) || {};
+    const insertId = data.insertId ?? data.id;
+
+    return {
+        id: insertId != null ? String(insertId) : undefined,
+        ...payload
+    };
 }
 
 
@@ -73,20 +88,32 @@ export async function userPost(name, email, role) {
  * @returns {Promise<Object>} - Usuario actualizado.
  */
 export async function userPut(id, name, email, role) {
+    const payload = { name, email, role };
+
     const response = await fetch(`${API_URL}/users/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ nombre: name, email, rol: role })
+        body: JSON.stringify(payload)
     });
 
+    const json = await response.json();
+
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al reemplazar el usuario');
+        throw new Error(json?.message || 'Error al reemplazar el usuario');
     }
 
-    return await response.json();
+    const data = extractData(json);
+
+    if (data && !Array.isArray(data) && typeof data === 'object') {
+        return data;
+    }
+
+    return {
+        id: String(id),
+        ...payload
+    };
 }
 
 
@@ -108,12 +135,22 @@ export async function userPatch(id, changes = {}) {
         body: JSON.stringify(changes)
     });
 
+    const json = await response.json();
+
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar parcialmente el usuario');
+        throw new Error(json?.message || 'Error al actualizar parcialmente el usuario');
     }
 
-    return await response.json();
+    const data = extractData(json);
+
+    if (data && !Array.isArray(data) && typeof data === 'object') {
+        return data;
+    }
+
+    return {
+        id: String(id),
+        ...changes
+    };
 }
 
 
@@ -127,7 +164,10 @@ export async function userPatch(id, changes = {}) {
  */
 export async function userDelete(id) {
     const response = await fetch(`${API_URL}/users/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     });
 
     if (!response.ok) {
