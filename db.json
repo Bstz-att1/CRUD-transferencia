@@ -31,7 +31,7 @@
       "email": "luis.hernandez@devcompany.com"
     }
   ],
-  "todos": [
+  "tasks": [
     {
       "id": "a1b2",
       "titulo": "Revisar código del módulo de autenticación",
@@ -137,5 +137,6 @@
       "userId": "user5",
       "estado": "completada"
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }
