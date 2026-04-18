@@ -12,23 +12,23 @@ import {
     actualizarTarea,
     aplicarFiltrosYOrdenar,
     prepararDatosExportacion
-} from '../services/tareasService.js';
+} from '../services/tasksService.js';
 
 // Importar UI (manipulación del DOM)
 import { 
-    renderizarTareas, 
-    mostrarErrorBusqueda,
-    limpiarErroresUI, 
-    mostrarErroresCampos,
-    mostrarModalEliminar,
-    ocultarModalEliminar,
-    prepararFormularioEditar,
-    resetearFormulario,
-    descargarArchivo
-} from '../ui/tareasUi.js';
+    renderTasks, 
+    showSearchError,
+    clearUiErrors, 
+    showFieldErrors,
+    showDeleteModal,
+    hideDeleteModal,
+    prepareEditForm,
+    resetForm,
+    downloadFile
+} from '../ui/tasksUi.js';
 
 // Importar Notificaciones (RF03)
-import { mostrarExito, mostrarError, mostrarInfo } from '../ui/notificacionesUi.js';
+import { showSuccess, showError, showInfo } from '../ui/notificationsUi.js';
 
 // Importar validaciones (utilidades)
 import { validarFormulario } from '../utils/validaciones.js';
@@ -79,7 +79,7 @@ export function getSortDir() {
  */
 export async function cargarTareasPorUsuario(usuarioSeleccionado) {
     if (!usuarioSeleccionado) {
-        mostrarErrorBusqueda('Por favor, ingrese un ID de usuario.');
+        showSearchError('Por favor, ingrese un ID de usuario.');
         return;
     }
     
@@ -103,7 +103,7 @@ export async function cargarTareasPorUsuario(usuarioSeleccionado) {
 
     } catch (error) {
         console.error(error);
-        mostrarErrorBusqueda("Error al mostrar tareas. Verifique el usuario o la conexión.");
+        showSearchError("Error al mostrar tareas. Verifique el usuario o la conexión.");
     }
 }
 
@@ -142,7 +142,7 @@ export function aplicarFiltrosYRender() {
     const resultado = aplicarFiltrosYOrdenar(estado.tareasActuales, opciones);
     
     const tasksContainer = document.querySelector(".tasks-container");
-    renderizarTareas(resultado, tasksContainer);
+    renderTasks(resultado, tasksContainer);
 }
 
 /**
@@ -200,7 +200,7 @@ export function prepararEdicionTarea(id) {
     if (!tarea) return;
 
     // Usar UI para preparar el formulario
-    prepararFormularioEditar(tarea);
+    prepareEditForm(tarea);
 }
 
 /**
@@ -214,7 +214,7 @@ export function prepararEliminacionTarea(id, target) {
     estado.deleteEventTarget = target;
 
     // Mostrar modal de confirmación
-    mostrarModalEliminar();
+    showDeleteModal();
 }
 
 /**
@@ -237,14 +237,14 @@ export async function executeDelete() {
         estado.tareasActuales = estado.tareasActuales.filter(t => t.id != estado.deleteTaskId);
 
         // Mostrar mensaje de éxito
-        mostrarExito('✅ Tarea eliminada correctamente.');
+        showSuccess('✅ Tarea eliminada correctamente.');
 
     } catch (error) {
         console.error(error);
-        mostrarError('Error del sistema: No se pudo eliminar la tarea. Por favor, intente más tarde.');
+        showError('Error del sistema: No se pudo eliminar la tarea. Por favor, intente más tarde.');
     } finally {
         // Cerrar modal y limpiar variables
-        ocultarModalEliminar();
+        hideDeleteModal();
         estado.deleteTaskId = null;
         estado.deleteEventTarget = null;
     }
@@ -254,7 +254,7 @@ export async function executeDelete() {
  * Cancela la eliminación y limpia el estado
  */
 export function cancelarEliminacion() {
-    ocultarModalEliminar();
+    hideDeleteModal();
     estado.deleteTaskId = null;
     estado.deleteEventTarget = null;
 }
@@ -275,8 +275,8 @@ export async function crearNuevaTarea(titulo, descripcion, usuario) {
     
     // Si hay errores de validación, mostrarlos
     if (Object.keys(validationErrors).length > 0) {
-        mostrarError('Por favor, corrija los errores en el formulario.');
-        mostrarErroresCampos(validationErrors);
+        showError('Por favor, corrija los errores en el formulario.');
+        showFieldErrors(validationErrors);
         return;
     }
     
@@ -292,22 +292,22 @@ export async function crearNuevaTarea(titulo, descripcion, usuario) {
         aplicarFiltrosYRender();
 
         // Mostrar mensaje de éxito
-        mostrarExito('✅ Tarea registrada exitosamente.');
+        showSuccess('✅ Tarea registrada exitosamente.');
 
         // Resetear formulario
-        resetearFormulario();
+        resetForm();
 
     } catch (error) {
         console.error(error);
         // Determinar el tipo de error para mostrar mensaje apropiado
         if (error.message && error.message.includes('Failed to fetch')) {
-            mostrarError('Error de conexión: No se pudo conectar con el servidor. Verifique su conexión a internet e intente más tarde.');
+            showError('Error de conexión: No se pudo conectar con el servidor. Verifique su conexión a internet e intente más tarde.');
         } else if (error.message && error.message.includes('500')) {
-            mostrarError('Error del servidor: Ocurrió un problema interno. Por favor, intente más tarde.');
+            showError('Error del servidor: Ocurrió un problema interno. Por favor, intente más tarde.');
         } else if (error.message && error.message.includes('404')) {
-            mostrarError('Error: No se encontró el recurso solicitado. Contacte al administrador.');
+            showError('Error: No se encontró el recurso solicitado. Contacte al administrador.');
         } else {
-            mostrarError('Error del sistema: No se pudo registrar la tarea. Por favor, intente más tarde.');
+            showError('Error del sistema: No se pudo registrar la tarea. Por favor, intente más tarde.');
         }
     }
 }
@@ -336,14 +336,14 @@ export async function actualizarTareaExistente(editId, titulo, descripcion, usua
         aplicarFiltrosYRender();
 
         // Mostrar mensaje de éxito
-        mostrarExito('✅ Tarea actualizada correctamente.');
+        showSuccess('✅ Tarea actualizada correctamente.');
 
         // Resetear formulario y botón
-        resetearFormulario();
+        resetForm();
 
     } catch (error) {
         console.error(error);
-        mostrarError('Error del sistema: No se pudo actualizar la tarea. Por favor, intente más tarde.');
+        showError('Error del sistema: No se pudo actualizar la tarea. Por favor, intente más tarde.');
     }
 }
 
@@ -358,11 +358,11 @@ export function exportarTareas() {
     const tasksContainer = document.querySelector(".tasks-container");
     
     if (!estado.tareasActuales || estado.tareasActuales.length === 0) {
-        mostrarInfo('ℹ️ No hay tareas visibles para exportar.');
+        showInfo('ℹ️ No hay tareas visibles para exportar.');
         return;
     }
     
     const datosJson = prepararDatosExportacion(estado.tareasActuales);
-    descargarArchivo(datosJson, 'tareas_exportadas.json', 'application/json');
-    mostrarExito('✅ Tareas exportadas correctamente.');
+    downloadFile(datosJson, 'tareas_exportadas.json', 'application/json');
+    showSuccess('✅ Tareas exportadas correctamente.');
 }
