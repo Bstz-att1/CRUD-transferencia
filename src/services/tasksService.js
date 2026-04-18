@@ -158,11 +158,14 @@ export function prepararDatosExportacion(tareas) {
  * UI : { id, titulo, descripcion, estado, userId }
  */
 function mapApiTaskToUiTask(task = {}) {
+    const rawId = task.id ?? task.task_id ?? '';
+    const rawUserId = task.userId ?? task.user_id ?? '';
+
     return {
-        id: task.id,
+        id: rawId !== '' && rawId != null ? String(rawId) : '',
         titulo: task.titulo ?? task.title ?? '',
         descripcion: task.descripcion ?? task.description ?? '',
         estado: task.estado ?? task.status ?? 'pendiente',
-        userId: task.userId ?? task.user_id ?? ''
+        userId: rawUserId !== '' && rawUserId != null ? String(rawUserId) : ''
     };
 }
