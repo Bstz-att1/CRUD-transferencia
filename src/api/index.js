@@ -1,5 +1,10 @@
-export { taskPost } from './post.js';
-export { taskGet, taskGetByUser } from './get.js';
-// export { ... } from './put.js';
-export { taskPatch } from './patch.js';
-export { taskDelete } from './delete.js';
+// ======================================================================
+//                     EXPORTACIONES | TASK.API.JS
+// ======================================================================
+export {
+    taskPost,
+    taskGet,
+    taskGetByUser,
+    taskPatch,
+    taskDelete
+} from './tasks.api.js';
