@@ -1020,3 +1020,108 @@ Se ejecutó compilación de producción del frontend para verificar integridad d
 - Confirmaciones de eliminación (tareas/usuarios/roles) ahora usan diálogos modernos, consistentes y más seguros para UX.
 - Se redujo dependencia de modales de confirmación legacy en `script.js`.
 - Se mantuvo compatibilidad funcional del frontend y se validó compilación exitosa.
+
+---
+
+## Actualización - Confirmación al cerrar sesión
+
+### 45) `src/script.js` (confirmación previa de logout)
+Se añadió confirmación explícita antes de cerrar la sesión del usuario para evitar cierres accidentales.
+
+**Cambios:**
+- Se importó `showConfirm` desde `src/ui/notificationsUi.js`.
+- En el evento click de `#logout-btn` se agregó un diálogo de confirmación con SweetAlert2:
+  - título: `¿Cerrar sesión?`
+  - texto: `Tu sesión actual se cerrará en este dispositivo.`
+  - botones: `Sí, cerrar sesión` / `Cancelar`
+  - ícono: `question`
+- Solo si el usuario confirma:
+  - se ejecuta `logoutCurrentSession()`
+  - se muestra la vista de autenticación (`showAuthView()`)
+  - se limpia `#login-error`.
+
+**Resultado:**
+- Logout más seguro y consistente con el patrón de confirmaciones modernas ya usado en acciones sensibles.
+
+---
+
+## Resumen de impacto (confirmación de cierre de sesión)
+- Se previene el cierre de sesión accidental.
+- Se unifica la experiencia UX del logout con los diálogos SweetAlert2 del resto del sistema.
+- Se mantiene el flujo funcional existente de cierre de sesión sin cambios de contrato.
+
+---
+
+## Actualización - Animaciones UI con animate.css (experiencia más dinámica y profesional)
+
+### 46) `src/script.js` (integración global de animaciones)
+Se integró `animate.css` en el punto de entrada para animar transiciones de vistas y modales sin romper la arquitectura actual.
+
+**Cambios:**
+- Importación directa de librería:
+  - `import 'animate.css';`
+- Se añadieron utilidades internas para animación:
+  - `animateIn(element, animation, speed)`
+  - `animateModalOpen(modalEl)`
+  - `animateModalClose(modalEl)`
+- Se animaron transiciones de autenticación:
+  - `showAuthView()` ahora aplica `animate__fadeIn` al login.
+  - `showAppView()` ahora aplica `animate__fadeIn` al contenedor principal de app.
+- Se animó el cambio de secciones SPA:
+  - `showView(viewId)` aplica `animate__fadeInUp` a la vista activa.
+- Se animó apertura/cierre de modales gestionados desde script:
+  - `userModal` y `roleModal` con entrada `zoomIn` y salida `fadeOutDown`.
+
+**Resultado:**
+- Navegación y flujo visual más “vivos”, con transiciones suaves y apariencia de aplicación moderna.
+
+---
+
+### 47) `src/ui/tasksUi.js` (animaciones en render de tareas)
+Se mejoró el render de tareas con animaciones de entrada progresiva para tarjetas y estado vacío.
+
+**Cambios:**
+- Estado vacío animado:
+  - `.empty-state` con `animate__fadeIn`.
+- Tarjetas de tarea animadas al render:
+  - cada `.task-card` incluye `animate__fadeInUp`.
+  - se añadió delay incremental por índice usando `--animate-delay` para efecto escalonado.
+
+**Resultado:**
+- Lista de tareas más dinámica al cargar/filtrar, con percepción de mayor calidad visual.
+
+---
+
+### 48) `src/ui/usersUi.js` (animaciones en render de usuarios)
+Se incorporaron animaciones en tabla de usuarios para mejorar lectura de cambios y feedback visual.
+
+**Cambios:**
+- Estado vacío animado:
+  - `.empty-state` con `animate__fadeIn`.
+- Contenedor de tabla animado:
+  - `.table-wrapper` con `animate__fadeInUp`.
+- Filas de usuarios animadas con entrada escalonada:
+  - cada `<tr>` recibe `animate__fadeInUp` y delay incremental por fila.
+
+**Resultado:**
+- Transiciones más agradables al buscar/filtrar usuarios, reforzando sensación de app profesional.
+
+---
+
+### 49) Estado de implementación y cobertura documentada
+Se documentan de forma explícita los cambios ya implementados y los pendientes del plan original para mantener trazabilidad técnica.
+
+**Implementado y documentado:**
+- Integración de animate.css en `script.js`.
+- Animación de vistas principales y transición auth/app shell.
+- Animación de modales de usuario y rol.
+- Animación de render dinámico en tareas.
+- Animación de render dinámico en usuarios.
+
+**Pendiente respecto al plan aprobado inicialmente:**
+- Aplicar animaciones específicas en `src/ui/rolesUi.js`.
+- Añadir utilidades CSS dedicadas de soporte (`reduced-motion`, normalización fina de delays) en `styles.css`.
+- Posible marcación HTML adicional en `index.html` para animaciones iniciales por sección (opcional, no bloqueante para funcionamiento actual).
+
+**Resultado:**
+- Changelog actualizado con transparencia sobre avance real y próximos ajustes para cierre completo.
