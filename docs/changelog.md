@@ -934,3 +934,89 @@ Se reforzó el mapeo del rol para resolver casos donde UI mostraba rol incorrect
   - **Usuarios** (`users-id-search`)
   - **Roles** (`roles-id-search`)
 - Estructura y eventos ajustados manteniendo compatibilidad con la base existente.
+
+---
+
+## Actualización - Modernización de alertas y confirmaciones con SweetAlert2
+
+### 41) `src/ui/notificationsUi.js` (refactor a SweetAlert2)
+Se reemplazó el sistema artesanal de toasts por SweetAlert2 para un look & feel moderno, consistente y más agradable visualmente.
+
+**Cambios:**
+- Se eliminó el contenedor manual de notificaciones (`notification-toast-container`) y su renderizado DOM custom.
+- Se integró `Swal` desde `sweetalert2`.
+- Se estandarizaron toasts reutilizables con configuración base:
+  - `toast: true`
+  - posición `top-end`
+  - barra de progreso y pausa de timer al hover.
+- API pública mantenida y mejorada:
+  - `showSuccess(message)`
+  - `showError(message)`
+  - `showInfo(message)`
+- Se añadió confirmación reutilizable:
+  - `showConfirm({ title, text, confirmButtonText, cancelButtonText, icon })`
+  - retorna `Boolean(result.isConfirmed)` para simplificar decisiones en controladores.
+
+**Resultado:**
+- Notificaciones más modernas, uniformes y fáciles de mantener en toda la aplicación.
+
+---
+
+### 42) `src/core/appController.js` (confirmaciones centralizadas con SweetAlert2)
+Se migraron confirmaciones críticas de eliminación para usar `showConfirm` y mejorar UX en acciones destructivas.
+
+**Cambios:**
+- Import actualizado:
+  - `showSuccess, showError, showInfo, showConfirm`.
+- Eliminación de tareas (`executeDelete`):
+  - ahora solicita confirmación con SweetAlert2 antes de ejecutar `eliminarTarea(...)`.
+  - si cancela, limpia estado de eliminación.
+- Eliminación de usuarios (`eliminarUsuarioConfirmado`):
+  - confirmación previa con SweetAlert2.
+- Eliminación de roles (`eliminarRolConfirmado`):
+  - confirmación previa con SweetAlert2.
+- Se mantuvo el feedback de éxito/error con toasts modernos.
+
+**Resultado:**
+- Flujo de confirmación más claro y amigable para operaciones irreversibles en tareas, usuarios y roles.
+
+---
+
+### 43) `src/script.js` (ajuste de wiring para confirmaciones modernas)
+Se actualizó el punto de entrada para desacoplarlo de modales de confirmación legacy en usuarios/roles y delegar confirmación al controlador + SweetAlert2.
+
+**Cambios:**
+- En acciones de borrado:
+  - Usuarios: al hacer click en `.user-delete`, ahora ejecuta:
+    - `prepararEliminacionUsuario(...)`
+    - `await eliminarUsuarioConfirmado()`
+  - Roles: al hacer click en `.role-delete`, ahora ejecuta:
+    - `prepararEliminacionRol(...)`
+    - `await eliminarRolConfirmado()`
+- Se retiraron referencias no utilizadas a modales legacy de confirmación de usuarios/roles en JS:
+  - `delete-user-modal`, `confirm-delete-user`, `cancel-delete-user`
+  - `delete-role-modal`, `confirm-delete-role`, `cancel-delete-role`
+- Se preservó la compatibilidad de flujo en tareas y el resto de navegación/eventos existentes.
+
+**Resultado:**
+- Menos complejidad de wiring, confirmaciones unificadas y experiencia visual consistente.
+
+---
+
+### 44) Validación técnica ejecutada
+Se ejecutó compilación de producción del frontend para verificar integridad de cambios.
+
+**Comando ejecutado:**
+- `cmd /c npm run build` (desde `Frontend`)
+
+**Resultado:**
+- Build exitoso con Vite.
+- Módulos transformados y artefactos de `dist/` generados sin errores de compilación.
+
+---
+
+## Resumen de impacto (Modernización de alertas)
+- Se modernizó la experiencia de notificaciones con SweetAlert2 en toda la SPA.
+- Confirmaciones de eliminación (tareas/usuarios/roles) ahora usan diálogos modernos, consistentes y más seguros para UX.
+- Se redujo dependencia de modales de confirmación legacy en `script.js`.
+- Se mantuvo compatibilidad funcional del frontend y se validó compilación exitosa.
