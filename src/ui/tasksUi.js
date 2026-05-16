@@ -39,7 +39,7 @@ export function renderTasks(tasks, container) {
 
     if (!tasks || tasks.length === 0) {
         container.innerHTML = `
-            <div class="empty-state">
+            <div class="empty-state animate__animated animate__fadeIn animate__faster">
                 <h4>No hay tareas para mostrar</h4>
                 <p>Cuando se carguen tareas del backend aparecerán aquí.</p>
             </div>
@@ -60,9 +60,17 @@ export function renderTasks(tasks, container) {
         });
     };
 
-    tasks.forEach(task => {
+    tasks.forEach((task, index) => {
         const card = document.createElement("div");
-        card.classList.add("task-card");
+        card.classList.add("task-card", "animate__animated", "animate__fadeInUp", "animate__faster");
+        card.style.setProperty('--animate-delay', `${Math.min(index * 0.06, 0.4)}s`);
+
+        const priorityRaw = `${task.prioridad || task.priority || ''}`.toLowerCase().trim();
+        const isHighPriority = ['alta', 'high', 'urgent', 'urgente'].includes(priorityRaw);
+
+        if (isHighPriority) {
+            card.classList.add("priority-high");
+        }
 
         card.innerHTML = `
             <div class="div-task">

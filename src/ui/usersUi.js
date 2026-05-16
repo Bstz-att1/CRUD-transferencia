@@ -34,7 +34,7 @@ export function renderUsers(users, container) {
 
     if (!users || users.length === 0) {
         container.innerHTML = `
-            <div class="empty-state">
+            <div class="empty-state animate__animated animate__fadeIn animate__faster">
                 <h4>No hay usuarios para mostrar</h4>
                 <p>Agrega un nuevo usuario para comenzar.</p>
             </div>
@@ -43,7 +43,7 @@ export function renderUsers(users, container) {
     }
 
     const table = document.createElement('div');
-    table.className = 'table-wrapper';
+    table.className = 'table-wrapper animate__animated animate__fadeInUp animate__faster';
     table.innerHTML = `
         <table class="users-table">
             <thead>
@@ -56,8 +56,8 @@ export function renderUsers(users, container) {
                 </tr>
             </thead>
             <tbody>
-                ${users.map((user) => `
-                    <tr>
+                ${users.map((user, index) => `
+                    <tr class="animate__animated animate__fadeInUp animate__faster" style="--animate-delay:${Math.min(index * 0.04, 0.28)}s">
                         <td>${user.id || '-'}</td>
                         <td>${user.nombre || 'Sin nombre'}</td>
                         <td>${user.email || 'Sin correo'}</td>
