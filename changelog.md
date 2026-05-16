@@ -723,3 +723,214 @@ Se aplicó una segunda capa de refinamiento visual para resolver desorden de esp
 - Se redujo el desorden en campos editables y distribución de botones.
 - Se mantuvo compatibilidad funcional al conservar IDs y eventos existentes.
 - Se reforzó la experiencia responsive para evitar desalineaciones en resoluciones menores.
+
+---
+
+## Actualización - Corrección de error al crear tareas (mensaje: "No se pudo registrar la tarea")
+
+### 31) `src/api/tasks.api.js` (robustez en creación `taskPost`)
+Se aplicaron ajustes de compatibilidad para reducir fallos de validación al crear tareas y mejorar el diagnóstico de errores devueltos por backend.
+
+**Cambios:**
+- Normalización del campo `created_by` para mayor compatibilidad:
+  - `admin` / `administrador` -> `administrador`
+  - cualquier otro valor -> `usuario`
+- Ajuste de parseo de `user_id`:
+  - se usa `Number(userId)` cuando es numérico válido.
+  - si no, se conserva el valor original para no forzar `NaN`.
+- Manejo seguro del `response.json()`:
+  - se encapsuló en `try/catch` para evitar ruptura cuando el backend responde sin body JSON.
+- Mejor extracción de mensaje de error backend:
+  - prioridad: `json.message` -> `json.error` -> `json.errors[]`.
+- Fallback de ID de creación más robusto:
+  - `data.insertId` / `data.id` / `json.insertId` / `json.id`.
+
+**Resultado:**
+- Mayor tolerancia a variaciones del backend en validación y formato de respuesta.
+- Mensajes de error más informativos para diagnosticar causas reales de fallo de creación.
+
+---
+
+## Actualización - Integración RBAC + Gestión de Roles + Búsqueda por ID (Frontend)
+
+### 32) `src/core/permissions.js` (nuevo)
+Se creó una capa central de permisos para aplicar lógica RBAC en frontend usando la sesión autenticada.
+
+**Cambios:**
+- Lectura de permisos del usuario desde `authService.getSession()`.
+- Helpers genéricos:
+  - `getPermissionCodes()`
+  - `hasPermission(code)`
+  - `hasAnyPermission(codes)`
+- Helpers por dominio:
+  - Usuarios: `canReadUsers`, `canCreateUsers`, `canUpdateUsers`, `canDeleteUsers`
+  - Tareas: `canReadTasks`, `canCreateTasks`, `canUpdateTasks`, `canDeleteTasks`
+  - Roles: `canReadRoles`, `canManageRoles`
+
+**Resultado:**
+- Base unificada para decisiones de visibilidad/acción por permisos en toda la SPA.
+
+---
+
+### 33) `src/api/roles.api.js` + `src/api/index.js` (nuevo/actualizado)
+Se implementó cliente API de roles y su exportación en el barrel de API.
+
+**Cambios:**
+- Endpoints integrados:
+  - `roleGet()` -> `GET /roles`
+  - `roleGetById(id)` -> `GET /roles/:id`
+  - `roleGetPermissionsById(id)` -> `GET /roles/:id/permissions`
+  - `rolePost(name, description, permissions)` -> `POST /roles`
+  - `rolePut(id, name, description, permissions)` -> `PUT /roles/:id`
+  - `rolePatch(id, changes)` -> `PATCH /roles/:id`
+  - `roleDelete(id)` -> `DELETE /roles/:id`
+- Uso de `authFetch` para token + refresh automático.
+- Manejo de parseo seguro y extracción de errores uniforme.
+
+**Resultado:**
+- Consumo completo y seguro del módulo de roles desde frontend.
+
+---
+
+### 34) `src/services/rolesService.js` (nuevo)
+Se agregó capa de servicio para mapear datos de roles API -> UI.
+
+**Cambios:**
+- Funciones:
+  - `obtenerRoles`
+  - `obtenerRolPorId`
+  - `obtenerPermisosRol`
+  - `crearRol`
+  - `reemplazarRol`
+  - `actualizarParcialRol`
+  - `eliminarRol`
+- Normalización de shape para consumo en componentes:
+  - `id`, `nombre`, `descripcion`, `createdAt`
+  - permisos en formato de códigos.
+
+**Resultado:**
+- Integración desacoplada y consistente de datos de roles para render/UI.
+
+---
+
+### 35) `src/core/appController.js` (actualizado)
+Se amplió el controlador principal con estado y flujos de Roles, guardas RBAC y filtros por ID en Usuarios/Roles.
+
+**Cambios:**
+- Estado nuevo:
+  - `rolesActuales`, `rolePermissionsMap`, `deleteRoleId`
+  - `rolesSearch`, `rolesIdSearch`
+  - `usersIdSearch`
+- Guardas RBAC aplicadas en acciones sensibles:
+  - crear/editar/eliminar usuarios
+  - crear/editar/eliminar tareas
+  - leer/gestionar roles
+- Nuevas funciones de Roles:
+  - `cargarRoles`
+  - `aplicarFiltrosRolesYRender`
+  - `setRolesSearch`
+  - `setRolesIdSearch`
+  - `crearRolNuevo`
+  - `prepararEdicionRol`
+  - `actualizarRolExistente`
+  - `prepararEliminacionRol`
+  - `eliminarRolConfirmado`
+  - `getRolePermissionsCatalog`
+- Filtros de Usuarios mejorados:
+  - `setUsersIdSearch`
+  - búsqueda combinada por ID + texto + rol.
+- Filtros de Roles mejorados:
+  - búsqueda combinada por ID + texto (nombre/descripción).
+
+**Resultado:**
+- Orquestación integral de RBAC + roles + búsquedas por ID sin romper el flujo existente.
+
+---
+
+### 36) `src/ui/rolesUi.js` + `src/ui/usersUi.js` (nuevo/ajustado)
+Se añadió render de roles y se consolidó visualización compatible con permisos.
+
+**Cambios:**
+- `rolesUi.js`:
+  - tabla de roles con nombre, descripción y permisos.
+  - acciones editar/borrar condicionadas por `canManage`.
+- `usersUi.js`:
+  - render estable de rol ya mapeado (`administrador/supervisor/usuario`) desde servicios.
+
+**Resultado:**
+- Capa UI preparada para administración de roles y visualización correcta por permisos.
+
+---
+
+### 37) `index.html` (actualizado)
+Se extendió la estructura de la SPA para incluir módulo de Roles y búsqueda por ID en Usuarios/Roles.
+
+**Cambios:**
+- Nueva navegación:
+  - botón `Roles` (`data-view="roles-view"`).
+- Nueva vista `roles-view`:
+  - buscador por ID: `#roles-id-search`
+  - buscador por texto: `#roles-search`
+  - botón `#new-role-btn`
+  - contenedor `#roles-container`
+- Nuevos modales:
+  - `#role-modal` (crear/editar rol, selección múltiple de permisos)
+  - `#delete-role-modal` (confirmación de eliminación)
+- En `users-view`:
+  - nuevo input `#users-id-search` para búsqueda por ID.
+- Se mantuvieron IDs previos para no romper bindings existentes.
+
+**Resultado:**
+- Interfaz completa para administración de roles y búsquedas por ID en ambos módulos.
+
+---
+
+### 38) `src/script.js` (actualizado)
+Se integró wiring de eventos para RBAC, roles CRUD y búsqueda por ID.
+
+**Cambios:**
+- Imports nuevos:
+  - acciones de roles desde `appController`.
+  - permisos desde `core/permissions`.
+- RBAC de presentación:
+  - oculta/limita navegación y botones según permisos.
+  - selección de primera vista permitida al iniciar sesión.
+- Eventos de roles:
+  - búsqueda por ID y texto
+  - abrir/cerrar modal
+  - crear/editar rol
+  - eliminar rol con modal de confirmación.
+- Eventos de usuarios:
+  - búsqueda por ID (`users-id-search`) además de texto/rol.
+- Al login:
+  - aplica visibilidad RBAC
+  - carga usuarios y roles según permisos.
+
+**Resultado:**
+- Flujo operativo completo de Roles y RBAC en el entrypoint de la SPA.
+
+---
+
+### 39) `src/services/usersService.js` (ajuste de mapeo de rol)
+Se reforzó el mapeo del rol para resolver casos donde UI mostraba rol incorrecto.
+
+**Cambios:**
+- Normalización de fuentes de rol:
+  - `role`, `rol`, `role_name`, `roleName`, `role_code`.
+- Mapeo final hacia etiquetas UI consistentes:
+  - `administrador`, `supervisor`, `usuario`.
+
+**Resultado:**
+- Corrección visual de roles en tabla de usuarios acorde al rol real asignado.
+
+---
+
+### 40) Resumen de impacto (Frontend)
+- Integración RBAC completa en frontend, alineada a permisos del backend.
+- Módulo de Roles funcional (listar, crear, editar, eliminar, consultar permisos).
+- Guardas de permisos en acciones de Usuarios/Tareas/Roles.
+- Corrección de visualización de rol de usuarios.
+- Búsqueda por ID implementada en:
+  - **Usuarios** (`users-id-search`)
+  - **Roles** (`roles-id-search`)
+- Estructura y eventos ajustados manteniendo compatibilidad con la base existente.
