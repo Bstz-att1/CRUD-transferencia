@@ -19,6 +19,23 @@ import {
     reemplazarUsuario,
     eliminarUsuario
 } from '../services/usersService.js';
+import {
+    obtenerRoles,
+    crearRol,
+    reemplazarRol,
+    eliminarRol,
+    obtenerPermisosRol
+} from '../services/rolesService.js';
+import {
+    canCreateUsers,
+    canUpdateUsers,
+    canDeleteUsers,
+    canCreateTasks,
+    canUpdateTasks,
+    canDeleteTasks,
+    canReadRoles,
+    canManageRoles
+} from './permissions.js';
 
 // Importar UI (manipulación del DOM)
 import { 
@@ -45,15 +62,21 @@ import { validarFormulario } from '../utils/validaciones.js';
 const estado = {
     tareasActuales: [],
     usuariosActuales: [],
+    rolesActuales: [],
+    rolePermissionsMap: {},
     deleteTaskId: null,
     deleteEventTarget: null,
     deleteUserId: null,
+    deleteRoleId: null,
     estadoActual: '',
     tituloActual: '',
     sortBy: 'fecha',
     sortDir: 'desc',
     usersSearch: '',
-    usersRoleFilter: ''
+    usersIdSearch: '',
+    usersRoleFilter: '',
+    rolesSearch: '',
+    rolesIdSearch: ''
 };
 
 // ========================
@@ -81,6 +104,10 @@ export function getSortDir() {
 
 export function getUsuariosActuales() {
     return estado.usuariosActuales;
+}
+
+export function getRolesActuales() {
+    return estado.rolesActuales;
 }
 
 // ========================
@@ -239,6 +266,11 @@ export function prepararEliminacionTarea(id, target) {
  * Ejecuta la eliminación de una tarea
  */
 export async function executeDelete() {
+    if (!canDeleteTasks()) {
+        showError('No tienes permisos para eliminar tareas.');
+        return;
+    }
+
     if (!estado.deleteTaskId) return;
 
     try {
@@ -288,6 +320,10 @@ export function cancelarEliminacion() {
  * @param {string} usuario - ID del usuario
  */
 export async function crearNuevaTarea(titulo, descripcion, usuario) {
+    if (!canCreateTasks()) {
+        showError('No tienes permisos para crear tareas.');
+        return;
+    }
     // Usar utils para validar
     const validationErrors = validarFormulario(titulo, descripcion, usuario);
     
@@ -338,6 +374,11 @@ export async function crearNuevaTarea(titulo, descripcion, usuario) {
  * @param {string} usuario - Nuevo ID de usuario
  */
 export async function actualizarTareaExistente(editId, titulo, descripcion, usuario) {
+    if (!canUpdateTasks()) {
+        showError('No tienes permisos para editar tareas.');
+        return;
+    }
+
     try {
         // Usar el servicio para actualizar
         await actualizarTarea(editId, titulo, descripcion, usuario);
@@ -414,13 +455,15 @@ export async function aplicarFiltrosUsuariosYRender() {
     if (!container) return;
 
     const search = (estado.usersSearch || '').trim().toLowerCase();
+    const idSearch = (estado.usersIdSearch || '').trim().toLowerCase();
     const role = String(estado.usersRoleFilter || '').trim().toLowerCase();
 
     const filtrados = (estado.usuariosActuales || []).filter((u) => {
         const okSearch = !search || (u.nombre || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
+        const okId = !idSearch || String(u.id || '').toLowerCase().includes(idSearch);
         const userRole = String(u.rol || '').trim().toLowerCase();
         const okRole = !role || userRole === role;
-        return okSearch && okRole;
+        return okSearch && okId && okRole;
     });
 
     const { renderUsers } = await import('../ui/usersUi.js');
@@ -435,8 +478,17 @@ export function setUsersRoleFilter(value) {
     estado.usersRoleFilter = value || '';
 }
 
-export async function crearUsuarioNuevo(nombre, correo, documento, rol) {
-    const nuevo = await crearUsuario(nombre, correo, documento, rol);
+export function setUsersIdSearch(value) {
+    estado.usersIdSearch = value || '';
+}
+
+export async function crearUsuarioNuevo(nombre, correo, documento, rol, password) {
+    if (!canCreateUsers()) {
+        showError('No tienes permisos para crear usuarios.');
+        return;
+    }
+
+    const nuevo = await crearUsuario(nombre, correo, documento, password, rol);
     estado.usuariosActuales.unshift(nuevo);
     aplicarFiltrosUsuariosYRender();
     actualizarKpis();
@@ -449,8 +501,24 @@ export async function prepararEdicionUsuario(id) {
     return user;
 }
 
-export async function actualizarUsuarioExistente(id, nombre, correo, documento, rol) {
-    const actualizado = await reemplazarUsuario(id, nombre, correo, documento, rol);
+export async function actualizarUsuarioExistente(id, nombre, correo, documento, rol, password) {
+    if (!canUpdateUsers()) {
+        showError('No tienes permisos para editar usuarios.');
+        return;
+    }
+
+    const userOriginal = estado.usuariosActuales.find((u) => String(u.id) === String(id));
+    const safePassword = password && password.trim() ? password.trim() : `Tmp${Date.now()}Aa1`;
+
+    const actualizado = await reemplazarUsuario(
+        id,
+        nombre,
+        correo,
+        documento || userOriginal?.document || '',
+        safePassword,
+        rol
+    );
+
     const idx = estado.usuariosActuales.findIndex((u) => String(u.id) === String(id));
     if (idx !== -1) estado.usuariosActuales[idx] = actualizado;
     aplicarFiltrosUsuariosYRender();
@@ -463,6 +531,11 @@ export function prepararEliminacionUsuario(id) {
 }
 
 export async function eliminarUsuarioConfirmado() {
+    if (!canDeleteUsers()) {
+        showError('No tienes permisos para eliminar usuarios.');
+        return;
+    }
+
     if (!estado.deleteUserId) return;
     await eliminarUsuario(estado.deleteUserId);
     estado.usuariosActuales = estado.usuariosActuales.filter((u) => String(u.id) !== String(estado.deleteUserId));
@@ -470,6 +543,134 @@ export async function eliminarUsuarioConfirmado() {
     aplicarFiltrosUsuariosYRender();
     actualizarKpis();
     showSuccess('Usuario eliminado');
+}
+
+export async function cargarRoles() {
+    if (!canReadRoles()) {
+        estado.rolesActuales = [];
+        estado.rolePermissionsMap = {};
+        await aplicarFiltrosRolesYRender();
+        return;
+    }
+
+    try {
+        const roles = await obtenerRoles();
+        estado.rolesActuales = roles;
+
+        const permissionsMap = {};
+        for (const role of roles) {
+            try {
+                const permissions = await obtenerPermisosRol(role.id);
+                permissionsMap[String(role.id)] = permissions;
+            } catch {
+                permissionsMap[String(role.id)] = [];
+            }
+        }
+
+        estado.rolePermissionsMap = permissionsMap;
+    } catch (error) {
+        console.error(error);
+        showError('Error al cargar roles');
+        estado.rolesActuales = [];
+        estado.rolePermissionsMap = {};
+    } finally {
+        await aplicarFiltrosRolesYRender();
+    }
+}
+
+export async function aplicarFiltrosRolesYRender() {
+    const container = document.getElementById('roles-container');
+    if (!container) return;
+
+    const search = (estado.rolesSearch || '').trim().toLowerCase();
+    const idSearch = (estado.rolesIdSearch || '').trim().toLowerCase();
+
+    const filtrados = (estado.rolesActuales || []).filter((r) => {
+        const okText = !search || (r.nombre || '').toLowerCase().includes(search)
+            || (r.descripcion || '').toLowerCase().includes(search);
+        const okId = !idSearch || String(r.id || '').toLowerCase().includes(idSearch);
+        return okText && okId;
+    });
+
+    const { renderRoles } = await import('../ui/rolesUi.js');
+    renderRoles(filtrados, container, {
+        canManage: canManageRoles(),
+        permissionsByRoleId: estado.rolePermissionsMap
+    });
+}
+
+export function setRolesSearch(value) {
+    estado.rolesSearch = value || '';
+}
+
+export function setRolesIdSearch(value) {
+    estado.rolesIdSearch = value || '';
+}
+
+export async function crearRolNuevo(nombre, descripcion, permissions) {
+    if (!canManageRoles()) {
+        showError('No tienes permisos para crear roles.');
+        return;
+    }
+
+    const nuevo = await crearRol(nombre, descripcion, permissions);
+    estado.rolesActuales.unshift(nuevo);
+    try {
+        estado.rolePermissionsMap[String(nuevo.id)] = await obtenerPermisosRol(nuevo.id);
+    } catch {
+        estado.rolePermissionsMap[String(nuevo.id)] = permissions || [];
+    }
+    await aplicarFiltrosRolesYRender();
+    showSuccess('Rol creado');
+}
+
+export async function prepararEdicionRol(id) {
+    const role = estado.rolesActuales.find((r) => String(r.id) === String(id));
+    if (!role) return null;
+
+    const permissions = estado.rolePermissionsMap[String(id)] || [];
+    return { ...role, permissions };
+}
+
+export async function actualizarRolExistente(id, nombre, descripcion, permissions) {
+    if (!canManageRoles()) {
+        showError('No tienes permisos para editar roles.');
+        return;
+    }
+
+    const actualizado = await reemplazarRol(id, nombre, descripcion, permissions);
+    const idx = estado.rolesActuales.findIndex((r) => String(r.id) === String(id));
+    if (idx !== -1) estado.rolesActuales[idx] = actualizado;
+    estado.rolePermissionsMap[String(id)] = permissions || [];
+    await aplicarFiltrosRolesYRender();
+    showSuccess('Rol actualizado');
+}
+
+export function prepararEliminacionRol(id) {
+    estado.deleteRoleId = id;
+}
+
+export async function eliminarRolConfirmado() {
+    if (!canManageRoles()) {
+        showError('No tienes permisos para eliminar roles.');
+        return;
+    }
+
+    if (!estado.deleteRoleId) return;
+    await eliminarRol(estado.deleteRoleId);
+    estado.rolesActuales = estado.rolesActuales.filter((r) => String(r.id) !== String(estado.deleteRoleId));
+    delete estado.rolePermissionsMap[String(estado.deleteRoleId)];
+    estado.deleteRoleId = null;
+    await aplicarFiltrosRolesYRender();
+    showSuccess('Rol eliminado');
+}
+
+export function getRolePermissionsCatalog() {
+    return [
+        'users.get', 'users.create', 'users.update', 'users.delete',
+        'tasks.get', 'tasks.create', 'tasks.update', 'tasks.delete',
+        'roles.get', 'roles.manage', 'reports.export'
+    ];
 }
 
 export function actualizarKpis() {
