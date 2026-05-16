@@ -24,6 +24,11 @@ import {
     prepararEliminacionUsuario,
     eliminarUsuarioConfirmado
 } from './core/appController.js';
+import {
+    isAuthenticated,
+    loginWithCredentials,
+    logoutCurrentSession
+} from './services/authService.js';
 
 const taskForm = document.getElementById('task-form');
 const taskTitle = document.getElementById('titulo');
@@ -64,6 +69,27 @@ const cancelDeleteUserBtn = document.getElementById('cancel-delete-user');
 
 let userEditingId = null;
 
+const authView = document.getElementById('auth-view');
+const appShell = document.getElementById('app-shell');
+const loginForm = document.getElementById('login-form');
+const loginDocumentInput = document.getElementById('login-document');
+const loginPasswordInput = document.getElementById('login-password');
+const loginError = document.getElementById('login-error');
+const logoutBtn = document.getElementById('logout-btn');
+
+function showAuthView(sessionExpired = false) {
+    authView?.classList.remove('hidden');
+    appShell?.classList.add('hidden');
+    if (sessionExpired && loginError) {
+        loginError.textContent = 'Tu sesión expiró. Inicia sesión nuevamente.';
+    }
+}
+
+function showAppView() {
+    authView?.classList.add('hidden');
+    appShell?.classList.remove('hidden');
+}
+
 function showView(viewId) {
     views.forEach((v) => v.classList.toggle('active', v.id === viewId));
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.view === viewId));
@@ -98,9 +124,19 @@ if (userSelectExternal && userSelect) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    if (!isAuthenticated()) {
+        showAuthView();
+        return;
+    }
+
+    showAppView();
     showView('dashboard-view');
     await cargarUsuarios();
     if (userSelect?.value) await cargarTareasPorUsuario(userSelect.value);
+});
+
+window.addEventListener('auth:session-expired', () => {
+    showAuthView(true);
 });
 
 navLinks.forEach((btn) => {
@@ -231,5 +267,40 @@ if (deleteUserModal) {
         if (e.target === deleteUserModal) {
             deleteUserModal.classList.remove('show');
         }
+    });
+}
+
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (loginError) loginError.textContent = '';
+
+        const documentValue = loginDocumentInput?.value?.trim();
+        const passwordValue = loginPasswordInput?.value?.trim();
+
+        if (!documentValue || !passwordValue) {
+            if (loginError) loginError.textContent = 'Documento y contraseña son requeridos.';
+            return;
+        }
+
+        try {
+            await loginWithCredentials(documentValue, passwordValue);
+            showAppView();
+            showView('dashboard-view');
+            await cargarUsuarios();
+            if (userSelect?.value) await cargarTareasPorUsuario(userSelect.value);
+            loginForm.reset();
+        } catch (error) {
+            if (loginError) loginError.textContent = error.message || 'No fue posible iniciar sesión.';
+        }
+    });
+}
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        await logoutCurrentSession();
+        showAuthView();
+        if (loginError) loginError.textContent = '';
     });
 }

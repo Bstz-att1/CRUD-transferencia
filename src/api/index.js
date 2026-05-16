@@ -21,3 +21,12 @@ export {
     userPatch,
     userDelete
 } from './users.api.js';
+
+// ======================================================================
+//                     EXPORTACIONES | AUTH.API.JS
+// ======================================================================
+export {
+    authLogin,
+    authRefresh,
+    authLogout
+} from './auth.api.js';

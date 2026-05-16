@@ -10,7 +10,30 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
+  <section id="auth-view" class="auth-screen">
+    <div class="auth-card">
+      <h2>Iniciar Sesión</h2>
+      <p>Ingresa con tu documento y contraseña para acceder al sistema.</p>
+
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-document" class="form-label">Documento</label>
+          <input type="text" id="login-document" class="form-input" placeholder="Ej: 12345678" required>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Contraseña</label>
+          <input type="password" id="login-password" class="form-input" placeholder="********" required>
+        </div>
+
+        <span id="login-error" class="field-error"></span>
+
+        <button type="submit" class="btn btn-primary">Iniciar sesión</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell hidden">
     <aside class="sidebar">
       <div class="brand">
         <h1>Task Manager</h1>
@@ -20,6 +43,7 @@
         <button class="nav-link active" data-view="dashboard-view">Dashboard</button>
         <button class="nav-link" data-view="tasks-view">Tareas</button>
         <button class="nav-link" data-view="users-view">Usuarios</button>
+        <button id="logout-btn" class="nav-link">Cerrar sesión</button>
       </nav>
     </aside>
 
