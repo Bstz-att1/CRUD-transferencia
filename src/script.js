@@ -86,10 +86,6 @@ const userRolInput = document.getElementById('user-rol');
 const userDocumentoInput = document.getElementById('user-documento');
 const userPasswordInput = document.getElementById('user-password');
 
-const deleteUserModal = document.getElementById('delete-user-modal');
-const confirmDeleteUserBtn = document.getElementById('confirm-delete-user');
-const cancelDeleteUserBtn = document.getElementById('cancel-delete-user');
-
 const rolesNavLink = document.getElementById('roles-nav-link');
 const rolesIdSearch = document.getElementById('roles-id-search');
 const rolesSearch = document.getElementById('roles-search');
@@ -102,10 +98,6 @@ const roleNameInput = document.getElementById('role-name');
 const roleDescriptionInput = document.getElementById('role-description');
 const rolePermissionsInput = document.getElementById('role-permissions');
 const closeRoleModalBtn = document.getElementById('close-role-modal');
-const deleteRoleModal = document.getElementById('delete-role-modal');
-const confirmDeleteRoleBtn = document.getElementById('confirm-delete-role');
-const cancelDeleteRoleBtn = document.getElementById('cancel-delete-role');
-
 let userEditingId = null;
 let roleEditingId = null;
 
@@ -346,31 +338,11 @@ if (usersContainer) {
 
         if (deleteBtn) {
             prepararEliminacionUsuario(deleteBtn.dataset.id);
-            deleteUserModal?.classList.add('show');
+            await eliminarUsuarioConfirmado();
         }
     });
 }
 
-if (confirmDeleteUserBtn) {
-    confirmDeleteUserBtn.addEventListener('click', async () => {
-        await eliminarUsuarioConfirmado();
-        deleteUserModal?.classList.remove('show');
-    });
-}
-
-if (cancelDeleteUserBtn) {
-    cancelDeleteUserBtn.addEventListener('click', () => {
-        deleteUserModal?.classList.remove('show');
-    });
-}
-
-if (deleteUserModal) {
-    deleteUserModal.addEventListener('click', (e) => {
-        if (e.target === deleteUserModal) {
-            deleteUserModal.classList.remove('show');
-        }
-    });
-}
 
 if (rolesIdSearch) {
     rolesIdSearch.addEventListener('input', async (e) => {
@@ -458,29 +430,11 @@ if (rolesContainer) {
 
         if (deleteBtn) {
             prepararEliminacionRol(deleteBtn.dataset.id);
-            deleteRoleModal?.classList.add('show');
+            await eliminarRolConfirmado();
         }
     });
 }
 
-if (confirmDeleteRoleBtn) {
-    confirmDeleteRoleBtn.addEventListener('click', async () => {
-        await eliminarRolConfirmado();
-        deleteRoleModal?.classList.remove('show');
-    });
-}
-
-if (cancelDeleteRoleBtn) {
-    cancelDeleteRoleBtn.addEventListener('click', () => {
-        deleteRoleModal?.classList.remove('show');
-    });
-}
-
-if (deleteRoleModal) {
-    deleteRoleModal.addEventListener('click', (e) => {
-        if (e.target === deleteRoleModal) deleteRoleModal.classList.remove('show');
-    });
-}
 
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {

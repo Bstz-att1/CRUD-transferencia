@@ -51,7 +51,7 @@ import {
 } from '../ui/tasksUi.js';
 
 // Importar Notificaciones (RF03)
-import { showSuccess, showError, showInfo } from '../ui/notificationsUi.js';
+import { showSuccess, showError, showInfo, showConfirm } from '../ui/notificationsUi.js';
 
 // Importar validaciones (utilidades)
 import { validarFormulario } from '../utils/validaciones.js';
@@ -273,12 +273,27 @@ export async function executeDelete() {
 
     if (!estado.deleteTaskId) return;
 
+    const confirmed = await showConfirm({
+        title: 'Eliminar tarea',
+        text: 'Esta acción eliminará la tarea de forma permanente.',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        icon: 'warning'
+    });
+
+    if (!confirmed) {
+        hideDeleteModal();
+        estado.deleteTaskId = null;
+        estado.deleteEventTarget = null;
+        return;
+    }
+
     try {
         // Usar el servicio para eliminar
         await eliminarTarea(estado.deleteTaskId);
 
         // Eliminar visualmente la tarjeta
-        const card = estado.deleteEventTarget.closest(".task-card");
+        const card = estado.deleteEventTarget?.closest(".task-card");
         if (card) {
             card.remove();
         }
@@ -537,6 +552,20 @@ export async function eliminarUsuarioConfirmado() {
     }
 
     if (!estado.deleteUserId) return;
+
+    const confirmed = await showConfirm({
+        title: 'Eliminar usuario',
+        text: 'Esta acción eliminará el usuario de forma permanente.',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        icon: 'warning'
+    });
+
+    if (!confirmed) {
+        estado.deleteUserId = null;
+        return;
+    }
+
     await eliminarUsuario(estado.deleteUserId);
     estado.usuariosActuales = estado.usuariosActuales.filter((u) => String(u.id) !== String(estado.deleteUserId));
     estado.deleteUserId = null;
@@ -657,6 +686,20 @@ export async function eliminarRolConfirmado() {
     }
 
     if (!estado.deleteRoleId) return;
+
+    const confirmed = await showConfirm({
+        title: 'Eliminar rol',
+        text: 'Esta acción eliminará el rol de forma permanente.',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        icon: 'warning'
+    });
+
+    if (!confirmed) {
+        estado.deleteRoleId = null;
+        return;
+    }
+
     await eliminarRol(estado.deleteRoleId);
     estado.rolesActuales = estado.rolesActuales.filter((r) => String(r.id) !== String(estado.deleteRoleId));
     delete estado.rolePermissionsMap[String(estado.deleteRoleId)];
