@@ -164,7 +164,12 @@ if (sortDirBtn) sortDirBtn.addEventListener('click', () => toggleSortDir());
 const exportBtn = document.createElement('button');
 exportBtn.textContent = '📥 Exportar JSON';
 exportBtn.className = 'btn btn-secondary';
-if (tasksContainer) {
+const taskListActions = document.getElementById('task-list-actions');
+
+if (taskListActions) {
+    taskListActions.appendChild(exportBtn);
+    exportBtn.addEventListener('click', () => exportarTareas());
+} else if (tasksContainer) {
     tasksContainer.parentNode.insertBefore(exportBtn, tasksContainer);
     exportBtn.addEventListener('click', () => exportarTareas());
 }

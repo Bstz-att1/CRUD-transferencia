@@ -70,46 +70,12 @@
           <h2>Gestión de Tareas Académicas</h2>
         </div>
 
-        <div class="panel">
-          <div class="controls-grid">
-            <div class="control">
-              <label for="user-select" class="form-label">ID de usuario</label>
-              <input type="text" id="user-select" class="form-input" placeholder="Ej: 1">
-              <span id="error-usuario-busqueda" class="field-error"></span>
-            </div>
-
-            <div class="control">
-              <label for="estado-filter" class="form-label">Filtrar por estado</label>
-              <select id="estado-filter" class="form-input">
-                <option value="">Todos</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="en progreso">En Progreso</option>
-                <option value="completada">Completada</option>
-              </select>
-            </div>
-
-            <div class="control">
-              <label for="titulo-filter" class="form-label">Buscar por título</label>
-              <input type="text" id="titulo-filter" class="form-input" placeholder="Buscar tarea...">
-            </div>
-
-            <div class="control">
-              <label for="sort-by" class="form-label">Ordenar por</label>
-              <select id="sort-by" class="form-input">
-                <option value="fecha">Fecha</option>
-                <option value="titulo">Título</option>
-                <option value="estado">Estado</option>
-              </select>
-            </div>
+        <form id="task-form" class="panel form-panel task-create-panel">
+          <div class="panel-head">
+            <h3>Crear tarea</h3>
+            <p>Registra una nueva tarea con su información principal.</p>
           </div>
 
-          <div class="toolbar">
-            <button type="button" id="refresh-btn" class="btn btn-primary">Cargar Tareas</button>
-            <button type="button" id="sort-dir" class="btn btn-secondary">Desc</button>
-          </div>
-        </div>
-
-        <form id="task-form" class="panel form-panel">
           <div class="form-grid">
             <div class="form-group">
               <label for="titulo" class="form-label">Título</label>
@@ -133,10 +99,56 @@
           <button type="submit" class="btn btn-primary submit">Guardar Tarea</button>
         </form>
 
-        <section id="task-list" class="panel">
-          <div class="section-title-row">
-            <h3>Lista de Tareas</h3>
+        <div class="panel task-filter-panel">
+          <div class="panel-head">
+            <h3>Buscar y filtrar tareas</h3>
+            <p>Localiza tareas por usuario, estado, título y orden de visualización.</p>
           </div>
+
+          <div class="filters-grid">
+            <div class="control">
+              <label for="user-select" class="form-label">ID de usuario</label>
+              <input type="text" id="user-select" class="form-input" placeholder="Ej: 1">
+              <span id="error-usuario-busqueda" class="field-error"></span>
+            </div>
+
+            <div class="control">
+              <label for="titulo-filter" class="form-label">Buscar por título</label>
+              <input type="text" id="titulo-filter" class="form-input" placeholder="Buscar tarea...">
+            </div>
+
+            <div class="control">
+              <label for="estado-filter" class="form-label">Estado</label>
+              <select id="estado-filter" class="form-input">
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en progreso">En Progreso</option>
+                <option value="completada">Completada</option>
+              </select>
+            </div>
+
+            <div class="control">
+              <label for="sort-by" class="form-label">Ordenar por</label>
+              <select id="sort-by" class="form-input">
+                <option value="fecha">Fecha</option>
+                <option value="titulo">Título</option>
+                <option value="estado">Estado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="toolbar task-filter-actions">
+            <button type="button" id="refresh-btn" class="btn btn-primary">Cargar Tareas</button>
+            <button type="button" id="sort-dir" class="btn btn-secondary">Desc</button>
+          </div>
+        </div>
+
+        <section id="task-list" class="panel task-list-panel">
+          <div class="section-title-row">
+            <h3>Listado de tareas</h3>
+            <p>Visualiza y gestiona las tareas cargadas.</p>
+          </div>
+          <div class="task-list-actions" id="task-list-actions"></div>
           <div id="tasks-skeleton" class="skeleton-grid hidden"></div>
           <div class="tasks-container"></div>
         </section>
