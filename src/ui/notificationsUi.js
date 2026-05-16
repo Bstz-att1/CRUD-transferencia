@@ -1,77 +1,65 @@
 /**
  * Notifications Module (RF03)
- * Sistema de toasts reutilizable para éxito/error/info.
+ * Sistema de notificaciones y confirmaciones con SweetAlert2.
  */
+import Swal from 'sweetalert2';
 
-let notificationContainer = null;
-
-function getNotificationContainer() {
-    if (!notificationContainer) {
-        notificationContainer = document.createElement('div');
-        notificationContainer.id = 'notification-toast-container';
-        Object.assign(notificationContainer.style, {
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            zIndex: '9999',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            width: 'min(420px, calc(100vw - 32px))'
-        });
-        document.body.appendChild(notificationContainer);
+const baseToastOptions = {
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
     }
-    return notificationContainer;
-}
+};
 
-function showNotification(message, type = 'info') {
-    const container = getNotificationContainer();
-    const toast = document.createElement('div');
-
-    const tone = {
-        success: { bg: '#15803d', border: '#86efac' },
-        error: { bg: '#b91c1c', border: '#fecaca' },
-        info: { bg: '#1d4ed8', border: '#93c5fd' }
-    }[type] || { bg: '#334155', border: '#cbd5e1' };
-
-    Object.assign(toast.style, {
-        padding: '12px 14px',
-        borderRadius: '10px',
-        color: '#ffffff',
-        background: tone.bg,
-        borderLeft: `4px solid ${tone.border}`,
-        boxShadow: '0 12px 24px rgba(15,23,42,.18)',
-        fontSize: '14px',
-        fontFamily: 'Inter, Roboto, sans-serif',
-        lineHeight: '1.4',
-        opacity: '0',
-        transform: 'translateY(-8px)',
-        transition: 'opacity .2s ease, transform .2s ease'
+function showToast(message, icon = 'info') {
+    return Swal.fire({
+        ...baseToastOptions,
+        icon,
+        title: message
     });
-
-    toast.textContent = message;
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateY(0)';
-    });
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-8px)';
-        setTimeout(() => toast.remove(), 220);
-    }, 3500);
 }
 
 export function showSuccess(message) {
-    showNotification(message, 'success');
+    return showToast(message, 'success');
 }
 
 export function showError(message) {
-    showNotification(message, 'error');
+    return showToast(message, 'error');
 }
 
 export function showInfo(message) {
-    showNotification(message, 'info');
+    return showToast(message, 'info');
+}
+
+export async function showConfirm({
+    title = '¿Estás seguro?',
+    text = 'Esta acción no se puede deshacer.',
+    confirmButtonText = 'Sí, continuar',
+    cancelButtonText = 'Cancelar',
+    icon = 'warning'
+} = {}) {
+    const result = await Swal.fire({
+        title,
+        text,
+        icon,
+        showCancelButton: true,
+        confirmButtonText,
+        cancelButtonText,
+        reverseButtons: true,
+        focusCancel: true,
+        allowOutsideClick: false,
+        customClass: {
+            popup: 'swal-modern-popup',
+            confirmButton: 'swal-modern-confirm',
+            cancelButton: 'swal-modern-cancel'
+        },
+        buttonsStyling: true
+    });
+
+    return Boolean(result.isConfirmed);
 }
