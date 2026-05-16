@@ -468,3 +468,149 @@ Se consolidó una hoja de estilos integral para layout, componentes y estados vi
 - Integración estable con backend Node.js/Express + MySQL, incluyendo normalización de respuestas y campos.
 - Arquitectura frontend más modular y mantenible (separación clara por capas).
 - Mejoras funcionales y UX: vistas por dominio, CRUD completo de usuarios/tareas, notificaciones toast, modales de confirmación, filtros, ordenamientos, exportación y KPIs.
+
+---
+
+## Actualización - Autenticación JWT (Login + Logout + Refresh Automático)
+
+### 21) `src/api/auth.api.js` (nuevo + ajuste de base path)
+Se consolidó la capa de autenticación del frontend para consumir los endpoints principales de sesión del backend.
+
+**Cambios:**
+- Se implementaron funciones:
+  - `authLogin(document, password)` -> `POST /auth/login`
+  - `authRefresh(refreshToken)` -> `POST /auth/refresh`
+  - `authLogout(accessToken, refreshToken)` -> `POST /auth/logout`
+- Se agregó `handleAuthResponse(...)` para parseo y manejo uniforme de errores HTTP.
+- Se corrigió la base de autenticación para entorno real:
+  - `AUTH_BASE = ${API_URL}/auth`
+
+**Resultado:**
+- El frontend quedó alineado con las rutas reales de autenticación del backend para login, renovación y cierre de sesión.
+
+---
+
+### 22) `src/services/authService.js` (nuevo)
+Se creó servicio dedicado para persistencia de sesión y orquestación básica de login/logout.
+
+**Cambios:**
+- Claves de almacenamiento:
+  - `tm_access_token`
+  - `tm_refresh_token`
+  - `tm_user`
+- Funciones implementadas:
+  - `saveSession({ accessToken, refreshToken, user })`
+  - `updateSessionTokens(accessToken, refreshToken)` (para refresh silencioso)
+  - `getSession()`
+  - `isAuthenticated()`
+  - `clearSession()`
+  - `loginWithCredentials(document, password)`
+  - `logoutCurrentSession()`
+
+**Resultado:**
+- Gestión centralizada de sesión en `localStorage`, reutilizable desde UI y cliente HTTP.
+
+---
+
+### 23) `src/api/httpClient.js` (nuevo)
+Se incorporó cliente HTTP autenticado con renovación automática de access token ante respuestas `401`.
+
+**Cambios:**
+- Implementación de `authFetch(url, options, retry)`:
+  - adjunta `Authorization: Bearer <accessToken>` automáticamente.
+  - si recibe `401`, intenta `authRefresh(refreshToken)`.
+  - actualiza tokens vía `updateSessionTokens(...)`.
+  - reintenta la petición original una sola vez.
+- Control de concurrencia para refresh:
+  - `refreshPromise` compartida, evitando múltiples refresh simultáneos.
+- Si refresh falla/inválido/revocado:
+  - `clearSession()`
+  - disparo de evento global:
+    - `window.dispatchEvent(new CustomEvent('auth:session-expired'))`
+
+**Resultado:**
+- Renovación silenciosa de access token sin interrumpir al usuario mientras el refresh token siga vigente.
+
+---
+
+### 24) `src/api/tasks.api.js` (actualizado a `authFetch`)
+Se migraron todas las operaciones de tareas al cliente HTTP autenticado con auto-refresh.
+
+**Cambios:**
+- Reemplazo de `fetch` directo por `authFetch` en:
+  - `taskGet`
+  - `taskPost`
+  - `taskPut`
+  - `taskPatch`
+  - `taskDelete`
+- Eliminación de helpers locales de token/header:
+  - `getAccessToken`
+  - `buildAuthHeaders`
+- Se mantuvo:
+  - `extractData(json)`
+  - manejo de payload y errores previos.
+
+**Resultado:**
+- Endpoints de tareas protegidos ahora soportan renovación automática de token y reintento transparente.
+
+---
+
+### 25) `src/api/users.api.js` (actualizado a `authFetch`)
+Se migraron todas las operaciones de usuarios al cliente HTTP autenticado con auto-refresh.
+
+**Cambios:**
+- Reemplazo de `fetch` directo por `authFetch` en:
+  - `userGet`
+  - `userGetById`
+  - `userPost`
+  - `userPut`
+  - `userPatch`
+  - `userDelete`
+- Eliminación de helpers locales de token/header:
+  - `getAccessToken`
+  - `buildAuthHeaders`
+- Se conservó contrato REST y manejo de respuesta envuelta (`json.data`).
+
+**Resultado:**
+- Consumo de endpoints de usuarios robusto ante expiración de access token y recuperación automática por refresh.
+
+---
+
+### 26) `src/script.js` + `index.html` + `styles.css` (flujo de autenticación UI)
+Se completó la integración visual y de comportamiento para login/logout y expiración de sesión.
+
+**Cambios principales en `script.js`:**
+- Guard inicial por autenticación:
+  - si no hay sesión, muestra vista de login (`auth-view`) y oculta app (`app-shell`).
+- Submit de login:
+  - usa `loginWithCredentials(...)`,
+  - al éxito, muestra app y carga data inicial.
+- Logout:
+  - usa `logoutCurrentSession()`,
+  - limpia estado y vuelve a login.
+- Manejo global de expiración de sesión:
+  - listener `window.addEventListener('auth:session-expired', ...)`
+  - fuerza retorno a login y muestra mensaje de sesión expirada.
+
+**Cambios en `index.html` y `styles.css`:**
+- Pantalla de autenticación inicial (`auth-view`) con formulario:
+  - documento
+  - contraseña
+- Mensajería de error de login (`#login-error`).
+- Botón de cierre de sesión (`#logout-btn`) en app.
+- Estilos dedicados para experiencia de login consistente con el diseño existente.
+
+**Resultado:**
+- Flujo de autenticación completo en frontend:
+  - Login inicial
+  - Uso normal del sistema autenticado
+  - Logout explícito
+  - Expiración controlada de sesión cuando el refresh ya no es válido.
+
+---
+
+## Resumen de impacto Frontend (autenticación y sesión)
+- Se habilitó autenticación JWT de extremo a extremo en la SPA.
+- Se agregó renovación automática de access token sin pedir login inmediato.
+- Se garantiza que solo se solicita re-login cuando el refresh token expira o es inválido/revocado.
+- Se centralizó la lógica de sesión y transporte autenticado para reducir duplicidad y facilitar mantenimiento.
