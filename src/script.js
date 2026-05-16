@@ -1,6 +1,7 @@
 /**
  * Punto de entrada de la SPA
  */
+import 'animate.css';
 import {
     cargarTareasPorUsuario,
     setEstadoFilter,
@@ -50,6 +51,7 @@ import {
     canUpdateTasks,
     canDeleteTasks
 } from './core/permissions.js';
+import { showConfirm } from './ui/notificationsUi.js';
 
 const taskForm = document.getElementById('task-form');
 const taskTitle = document.getElementById('titulo');
@@ -109,9 +111,46 @@ const loginPasswordInput = document.getElementById('login-password');
 const loginError = document.getElementById('login-error');
 const logoutBtn = document.getElementById('logout-btn');
 
+function animateIn(element, animation = 'animate__fadeInUp', speed = 'animate__faster') {
+    if (!element) return;
+    element.classList.remove('animate__animated', 'animate__fadeInUp', 'animate__fadeIn', 'animate__fadeInRight', 'animate__fadeInLeft', 'animate__zoomIn', 'animate__faster', 'animate__fast');
+    void element.offsetWidth;
+    element.classList.add('animate__animated', animation, speed);
+}
+
+function animateModalOpen(modalEl) {
+    if (!modalEl) return;
+    modalEl.classList.add('show');
+    const content = modalEl.querySelector('.modal-content');
+    animateIn(content, 'animate__zoomIn', 'animate__fast');
+}
+
+function animateModalClose(modalEl) {
+    if (!modalEl) return;
+    const content = modalEl.querySelector('.modal-content');
+    if (!content) {
+        modalEl.classList.remove('show');
+        return;
+    }
+
+    content.classList.remove('animate__zoomIn');
+    void content.offsetWidth;
+    content.classList.add('animate__animated', 'animate__fadeOutDown', 'animate__faster');
+
+    const onEnd = () => {
+        modalEl.classList.remove('show');
+        content.classList.remove('animate__animated', 'animate__fadeOutDown', 'animate__faster');
+        content.removeEventListener('animationend', onEnd);
+    };
+
+    content.addEventListener('animationend', onEnd);
+}
+
 function showAuthView(sessionExpired = false) {
     authView?.classList.remove('hidden');
     appShell?.classList.add('hidden');
+    animateIn(authView, 'animate__fadeIn', 'animate__fast');
+
     if (sessionExpired && loginError) {
         loginError.textContent = 'Tu sesión expiró. Inicia sesión nuevamente.';
     }
@@ -120,10 +159,17 @@ function showAuthView(sessionExpired = false) {
 function showAppView() {
     authView?.classList.add('hidden');
     appShell?.classList.remove('hidden');
+    animateIn(appShell, 'animate__fadeIn', 'animate__fast');
 }
 
 function showView(viewId) {
-    views.forEach((v) => v.classList.toggle('active', v.id === viewId));
+    views.forEach((v) => {
+        const isTarget = v.id === viewId;
+        v.classList.toggle('active', isTarget);
+        if (isTarget) {
+            animateIn(v, 'animate__fadeInUp', 'animate__faster');
+        }
+    });
     navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.view === viewId));
 }
 
@@ -175,11 +221,11 @@ function openUserModal(user = null) {
             userPasswordInput.placeholder = 'Mínimo 6 caracteres';
         }
     }
-    userModal.classList.add('show');
+    animateModalOpen(userModal);
 }
 
 function closeUserModal() {
-    userModal?.classList.remove('show');
+    animateModalClose(userModal);
     userEditingId = null;
     userForm?.reset();
     if (userPasswordInput) {
@@ -383,11 +429,11 @@ function openRoleModal(role = null) {
         populateRolePermissionsSelect([]);
     }
 
-    roleModal.classList.add('show');
+    animateModalOpen(roleModal);
 }
 
 function closeRoleModal() {
-    roleModal?.classList.remove('show');
+    animateModalClose(roleModal);
     roleEditingId = null;
     roleForm?.reset();
     populateRolePermissionsSelect([]);
@@ -467,6 +513,16 @@ if (loginForm) {
 
 if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirm({
+            title: '¿Cerrar sesión?',
+            text: 'Tu sesión actual se cerrará en este dispositivo.',
+            confirmButtonText: 'Sí, cerrar sesión',
+            cancelButtonText: 'Cancelar',
+            icon: 'question'
+        });
+
+        if (!confirmed) return;
+
         await logoutCurrentSession();
         showAuthView();
         if (loginError) loginError.textContent = '';
